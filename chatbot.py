@@ -13,7 +13,6 @@ import threading
 
 
 
-
 class MainWindow(QMainWindow):
     
     response_received = pyqtSignal(str) 
@@ -92,7 +91,7 @@ class MainWindow(QMainWindow):
     
     def get_response(self, message):
         try:
-            response = self.model.generate_content(message)
+            response = self.model.generate_content(f'{message}, create styles in html rich format')
             self.response_received.emit(response.text)  
         except Exception as e:
             self.response_received.emit(f"Error: {str(e)}")  # Emit an error message
@@ -144,12 +143,16 @@ class CustomTextEdit(QTextEdit):
 class MsgWidget(QWidget):
     def __init__(self, msg, responser='bot'):
         super().__init__()
-        # self.setMinimumHeight(40)
         self.message = msg
         
         layout = QHBoxLayout()
+        icn_layout = QVBoxLayout()
+        icn_layout.setContentsMargins(0, 15, 0, 15)
         icn_label = QLabel()
         icn_label.setFixedSize(25, 25)
+        
+        icn_layout.addWidget(icn_label)
+        icn_layout.addStretch() # to push the icon to the top
         
         self.msg_container = QWidget()
         self.msg_container.setObjectName('msg_widget')
@@ -167,20 +170,21 @@ class MsgWidget(QWidget):
         if responser == 'bot':
             # Add the icon first
             icon = QPixmap('bot.png')
-            layout.addWidget(icn_label)
+            layout.addLayout(icn_layout)
             # And the message box
             layout.addWidget(self.msg_container)
         
         else:
             layout.addWidget(self.msg_container)
             icon = QPixmap('profile.png')
-            layout.addWidget(icn_label)
+            layout.addLayout(icn_layout)
             
         icn_label.setPixmap(icon)
             
 
         self.setStyleSheet('''
                 #messageLabel{
+                    color: #000000;
                     background-color: transparent;
                     font-family: roboto;
                     font-size: 14px;
@@ -216,7 +220,7 @@ class CustomTextBrowser(QTextBrowser):
 
     def adjust_height(self):
         doc_height = self.document().size().height()
-        self.setFixedHeight(int(doc_height) + 10)  # Add some padding for comfort    
+        self.setFixedHeight(int(doc_height)) 
 
 
 
