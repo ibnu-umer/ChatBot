@@ -121,14 +121,12 @@ class MainWindow(QMainWindow):
 class MsgWidget(QWidget):
     def __init__(self, msg, responser='bot'):
         super().__init__()
-        self.setMinimumHeight(40)
+        # self.setMinimumHeight(40)
         self.message = msg
         
         layout = QHBoxLayout()
-        icon = QPixmap('bot.png')
         icn_label = QLabel()
         icn_label.setFixedSize(25, 25)
-        icn_label.setPixmap(icon)
         
         self.msg_container = QWidget()
         self.msg_container.setObjectName('msg_widget')
@@ -140,6 +138,8 @@ class MsgWidget(QWidget):
         self.msg_container.setLayout(self.msg_container_layout)
         
         self.msg_label = QLabel('', self.msg_container)
+        self.msg_label.setWordWrap(True)
+        self.msg_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse | Qt.TextInteractionFlag.TextSelectableByKeyboard)
         self.msg_label.setObjectName('messageLabel')
         self.msg_container_layout.addWidget(self.msg_label)
         
@@ -175,8 +175,8 @@ class MsgWidget(QWidget):
         self.msg_container.setFixedWidth(available_width)
         max_line_width = available_width // self.fontMetrics().averageCharWidth()
         max_line_width = int(max_line_width - (max_line_width / 3) + 5) 
-        wrapped_msg = textwrap.fill(self.message, width=max_line_width)
-        self.msg_label.setText(wrapped_msg)
+        # wrapped_msg = textwrap.fill(self.message, width=max_line_width)
+        self.msg_label.setText(self.message)
     
     
 
