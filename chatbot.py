@@ -175,7 +175,6 @@ class MsgWidget(QWidget):
         self.msg_container.setFixedWidth(available_width)
         max_line_width = available_width // self.fontMetrics().averageCharWidth()
         max_line_width = int(max_line_width - (max_line_width / 3) + 5) 
-        print(max_line_width)
         wrapped_msg = textwrap.fill(self.message, width=max_line_width)
         self.msg_label.setText(wrapped_msg)
     
