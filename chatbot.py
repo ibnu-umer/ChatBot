@@ -1,9 +1,9 @@
 from PyQt6.QtWidgets import  (
-    QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QWidget, QLineEdit, QScrollArea,
+    QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QWidget, QScrollArea,
     QPushButton, QSpacerItem, QSizePolicy, QTextEdit, QTextBrowser
 )
 from PyQt6.QtGui import QIcon, QPixmap
-from PyQt6.QtCore import QSize, Qt, pyqtSlot, pyqtSignal
+from PyQt6.QtCore import QSize, Qt, pyqtSlot, pyqtSignal, QEvent
 import sys
 import google.generativeai as genai
 from api_key import API_KEY
@@ -22,6 +22,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setMinimumSize(700, 500)
         self.setWindowTitle('ChatBot')
+        self.setWindowIcon(QIcon('robot.png'))
         
         genai.configure(api_key=API_KEY)
         self.model = genai.GenerativeModel("gemini-1.5-flash")
@@ -54,7 +55,7 @@ class MainWindow(QMainWindow):
         
         # Message input area with sent button
         input_area_layout = QHBoxLayout()
-        self.input_area = CustomTextEdit()
+        self.input_area = CustomTextEdit(self)
         self.input_area.setPlaceholderText('Ask your assistant...')
         self.input_area.setObjectName('input')
         self.input_area.setMaximumHeight(40)
@@ -64,9 +65,12 @@ class MainWindow(QMainWindow):
         self.sent_btn.setIcon(QIcon('sent.png'))
         self.sent_btn.setIconSize(QSize(20,20))
         self.sent_btn.setFixedSize(40, 40)
+        self.sent_btn.setToolTip('Sent message. shortcut : shift+enter')
         self.sent_btn.clicked.connect(self.get_msg_from_user)
         input_area_layout.addWidget(self.sent_btn)
         main_layout.addLayout(input_area_layout)
+        
+        self.installEventFilter(self)
         
         
         # Central widget and layout setup
@@ -137,18 +141,33 @@ class MainWindow(QMainWindow):
         
         
         
-    def keyPressEvent(self, event):
-        key = event.key()
-        modifiers = event.modifiers()
-        # Check for Shift + Enter combination
-        if modifiers == Qt.KeyboardModifier.ShiftModifier and key == Qt.Key.Key_Return:
-            print('pressed')
-            self.get_msg_from_user()
+    def eventFilter(self, obj, event):
+        # Check if the event is a key press
+        if event.type() == QEvent.Type.KeyPress:
+            if obj is self:  # If the key press is in the main window and not inside QTextEdit
+                # If QTextEdit does not have focus, set focus to QTextEdit
+                if not self.input_area.hasFocus():
+                    self.input_area.setFocus()  # Activate the QTextEdit
+
+                # Insert the character of the pressed key into QTextEdit
+                key_event = event  # Capture the key event
+                key = key_event.text()  # Get the character corresponding to the key pressed
+
+                # Insert the character into the QTextEdit at the cursor position
+                cursor = self.input_area.textCursor()
+                cursor.insertText(key)  # Insert the character
+
+            return True  # Return True to stop further event propagation
+
+        # If it's not a key event, continue normal event processing
+        return super().eventFilter(obj, event)
+        
         
 
 class CustomTextEdit(QTextEdit):
-    def __init__(self, placeholder=None, parent=None):
+    def __init__(self, parent):
         super().__init__(parent)
+        self.parent = parent
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         self.setMaximumHeight(100)
 
@@ -159,7 +178,18 @@ class CustomTextEdit(QTextEdit):
     def adjust_height(self):
         doc_height = self.document().size().height()
         if doc_height < 150:  
-            self.setFixedHeight(int(doc_height + 10))  # Add some padding        
+            self.setFixedHeight(int(doc_height + 10))  # Add some padding      
+            
+    
+    def keyPressEvent(self, event):
+        key = event.key()
+        modifiers = event.modifiers()
+        # Check for Shift + Enter combination
+        if modifiers == Qt.KeyboardModifier.ShiftModifier and key == Qt.Key.Key_Return:
+            self.parent.get_msg_from_user()  
+        else:
+            # Let the default behavior occur for other keys
+            super().keyPressEvent(event)
 
 
         
