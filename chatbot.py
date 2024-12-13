@@ -1,11 +1,10 @@
 from PyQt6.QtWidgets import  (
     QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QWidget, QLineEdit, QScrollArea,
-    QPushButton, QSpacerItem, QSizePolicy
+    QPushButton, QSpacerItem, QSizePolicy, QTextEdit, QTextBrowser
 )
 from PyQt6.QtGui import QIcon, QPixmap
-from PyQt6.QtCore import QSize, Qt, pyqtSlot, pyqtSignal, QMetaObject
+from PyQt6.QtCore import QSize, Qt, pyqtSlot, pyqtSignal
 import sys
-import textwrap
 import google.generativeai as genai
 from api_key import API_KEY
 import threading
@@ -55,9 +54,10 @@ class MainWindow(QMainWindow):
         
         # Message input area with sent button
         input_area_layout = QHBoxLayout()
-        self.input_area = QLineEdit(placeholderText='Ask your assistant...')
+        self.input_area = CustomTextEdit()
+        self.input_area.setPlaceholderText('Ask your assistant...')
         self.input_area.setObjectName('input')
-        self.input_area.setFixedHeight(40)
+        self.input_area.setMaximumHeight(40)
         input_area_layout.addWidget(self.input_area)
         
         self.sent_btn = QPushButton()
@@ -81,8 +81,12 @@ class MainWindow(QMainWindow):
                     font-weight: bold;
                 }
                 #input{
-                    font-size: 13px;
+                    font-size: 14px;
+                    padding: 15px;
+                    padding-top: 6px;
+                    padding-bottom: 0px;
                 }
+                
         ''')
         
     
@@ -105,7 +109,7 @@ class MainWindow(QMainWindow):
         
         
     def get_msg_from_user(self):
-        msg = self.input_area.text()
+        msg = self.input_area.toPlainText()
         # To avoid empty messages
         if msg:
             self.input_area.clear()
@@ -116,6 +120,25 @@ class MainWindow(QMainWindow):
             
             threading.Thread(target=self.get_response, args=(msg, )).start()
         
+        
+        
+
+class CustomTextEdit(QTextEdit):
+    def __init__(self, placeholder=None, parent=None):
+        super().__init__(parent)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.setMaximumHeight(100)
+
+        # Connect the sizeChanged signal to update height
+        self.document().contentsChanged.connect(self.adjust_height)
+
+
+    def adjust_height(self):
+        doc_height = self.document().size().height()
+        if doc_height < 150:  
+            self.setFixedHeight(int(doc_height + 10))  # Add some padding        
+
+
         
 
 class MsgWidget(QWidget):
@@ -137,11 +160,9 @@ class MsgWidget(QWidget):
         self.msg_container_layout.setContentsMargins(15, 15, 15, 15)
         self.msg_container.setLayout(self.msg_container_layout)
         
-        self.msg_label = QLabel('', self.msg_container)
-        self.msg_label.setWordWrap(True)
-        self.msg_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse | Qt.TextInteractionFlag.TextSelectableByKeyboard)
-        self.msg_label.setObjectName('messageLabel')
-        self.msg_container_layout.addWidget(self.msg_label)
+        self.text_browser = CustomTextBrowser()
+        self.text_browser.setObjectName('messageLabel')
+        self.msg_container_layout.addWidget(self.text_browser)
         
         if responser == 'bot':
             # Add the icon first
@@ -175,10 +196,28 @@ class MsgWidget(QWidget):
         self.msg_container.setFixedWidth(available_width)
         max_line_width = available_width // self.fontMetrics().averageCharWidth()
         max_line_width = int(max_line_width - (max_line_width / 3) + 5) 
-        # wrapped_msg = textwrap.fill(self.message, width=max_line_width)
-        self.msg_label.setText(self.message)
+        self.text_browser.setHtml(self.message)
     
     
+    
+    
+class CustomTextBrowser(QTextBrowser):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setMinimumHeight(40)
+        # Disable scrollbars
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        
+        self.setOpenExternalLinks(True)
+        
+        # Monitor content changes to adjust height
+        self.document().contentsChanged.connect(self.adjust_height)
+
+    def adjust_height(self):
+        doc_height = self.document().size().height()
+        self.setFixedHeight(int(doc_height) + 10)  # Add some padding for comfort    
+
 
 
 
