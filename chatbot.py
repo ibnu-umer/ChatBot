@@ -8,6 +8,7 @@ import sys
 import google.generativeai as genai
 from api_key import API_KEY
 import threading
+import re
 
 
 
@@ -91,8 +92,9 @@ class MainWindow(QMainWindow):
     
     def get_response(self, message):
         try:
-            response = self.model.generate_content(f'{message}, create styles in html rich format')
-            self.response_received.emit(response.text)  
+            response = self.model.generate_content(message)
+            html_text = self.convert_to_html(response.text)
+            self.response_received.emit(html_text)  
         except Exception as e:
             self.response_received.emit(f"Error: {str(e)}")  # Emit an error message
         finally:
@@ -120,6 +122,28 @@ class MainWindow(QMainWindow):
             threading.Thread(target=self.get_response, args=(msg, )).start()
         
         
+    
+    def convert_to_html(self, markdown_text):
+        # Convert **bold** to <b>bold</b>
+        html_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', markdown_text)
+        
+        # Convert *italic* to <i>italic</i>
+        html_text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', html_text)
+        
+        # Replace newlines (\n) with <br> for line breaks
+        html_text = html_text.replace('\n', '<br>')
+        
+        return html_text
+        
+        
+        
+    def keyPressEvent(self, event):
+        key = event.key()
+        modifiers = event.modifiers()
+        # Check for Shift + Enter combination
+        if modifiers == Qt.KeyboardModifier.ShiftModifier and key == Qt.Key.Key_Return:
+            print('pressed')
+            self.get_msg_from_user()
         
 
 class CustomTextEdit(QTextEdit):
